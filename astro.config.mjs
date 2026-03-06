@@ -6,7 +6,7 @@ import sitemap from "@astrojs/sitemap";
 // https://astro.build/config
 export default defineConfig({
   output: "server",
-  site: "https://whatdotracterssee.com",
+  site: "https://metapreview.net",
   adapter: node({
     mode: "standalone",
   }),
