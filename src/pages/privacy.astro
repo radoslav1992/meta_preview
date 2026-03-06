@@ -1,0 +1,47 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const seoTitle = "Privacy Policy | What Do Trackers See?";
+const seoDescription = "Our privacy policy explains how our browser fingerprinting auditor works, how data is processed locally, and how third-party vendors use cookies.";
+---
+
+<Layout title={seoTitle} description={seoDescription}>
+  <main class="container">
+    <div class="page-header">
+      <h1>Privacy Policy</h1>
+      <p class="page-header__subtitle">Last Updated: March 2026</p>
+    </div>
+
+    <article class="prose">
+      <p>Your privacy is fundamentally important to us. The "What Do Trackers See?" tool was built to educate users about digital privacy, not to violate it. This Privacy Policy outlines how our website operates, what data is processed, and your rights regarding third-party vendors.</p>
+
+      <h2>1. How Our Tool Works (Local Processing)</h2>
+      <p>The core functionality of the "What Do Trackers See?" auditor operates <strong>entirely within your web browser</strong>. When you visit our homepage and the scan executes, the data points collected (such as your Canvas fingerprint, WebGL hardware information, Audio context, screen resolution, and privacy settings) are generated and displayed locally on your device.</p>
+      
+      <p><strong>We do not store, log, transmit, or sell any of your fingerprint data.</strong> The server only temporarily processes standardized HTTP request headers (such as your IP address and User-Agent) necessary to deliver the web page to you, but this data is immediately discarded and never saved to any database or log file on our servers.</p>
+
+      <h2>2. Third-Party Vendors and Ad Providers</h2>
+      <p>To keep this tool free and available to the public, this website is monetized through third-party advertising partners, specifically Google AdSense. Please be aware of the following regarding third-party vendors:</p>
+      
+      <ul>
+        <li>Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites on the internet.</li>
+        <li>Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to this site and/or other sites on the Internet.</li>
+      </ul>
+
+      <h2>3. Opting Out of Personalized Advertising</h2>
+      <p>You have the right and ability to opt out of personalized advertising. You can do this by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>. Alternatively, you can opt out of a third-party vendor's use of cookies for personalized advertising by visiting <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer">www.aboutads.info</a>.</p>
+
+      <h2>4. Use of Cookies</h2>
+      <p>While the primary fingerprinting tool on our site does not rely on cookies to function, the third-party advertising services integrated into our site may place and read cookies on your browser, or use web beacons to collect information as a result of ad serving on our website.</p>
+
+      <h2>5. Links to Other Websites</h2>
+      <p>Our website may contain links to other websites of interest (such as VPN providers, privacy browsers, or educational resources). However, once you have used these links to leave our site, you should note that we do not have any control over that other website. Therefore, we cannot be responsible for the protection and privacy of any information which you provide whilst visiting such sites, and such sites are not governed by this privacy statement.</p>
+
+      <h2>6. Changes to this Policy</h2>
+      <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page. You are advised to review this Privacy Policy periodically for any changes.</p>
+
+      <h2>7. Contact Us</h2>
+      <p>If you have any questions about this Privacy Policy, please contact us at <a href="mailto:admin@metapreview.net">admin@metapreview.net</a>.</p>
+    </article>
+  </main>
+</Layout>

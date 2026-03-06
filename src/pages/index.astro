@@ -1,0 +1,857 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+// ── Server-side data extraction ──
+const request = Astro.request;
+const headers = request.headers;
+
+// IP Address
+const rawIp =
+  headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+  headers.get('x-real-ip') ||
+  headers.get('cf-connecting-ip') ||
+  Astro.clientAddress ||
+  'Unknown';
+
+// Detect localhost / loopback IPs
+const localhostIps = ['::1', '127.0.0.1', '::ffff:127.0.0.1', 'localhost'];
+const isLocalhost = localhostIps.includes(rawIp);
+const ip = rawIp;
+const ipDisplayNote = isLocalhost
+  ? 'You are viewing this from localhost. Your real public IP will be shown when this site is deployed to a server.'
+  : 'This is your public-facing IP address. Websites use it to approximate your location, ISP, and can link your browsing sessions together.';
+
+// User-Agent parsing
+const ua = headers.get('user-agent') || 'Unknown';
+
+function parseOS(userAgent: string): string {
+  if (/Windows NT 10/.test(userAgent)) return 'Windows 10/11';
+  if (/Windows NT 6\.3/.test(userAgent)) return 'Windows 8.1';
+  if (/Windows NT 6\.2/.test(userAgent)) return 'Windows 8';
+  if (/Windows NT 6\.1/.test(userAgent)) return 'Windows 7';
+  if (/Windows/.test(userAgent)) return 'Windows';
+  if (/Mac OS X 10[._]15/.test(userAgent)) return 'macOS Catalina+';
+  if (/Mac OS X 11/.test(userAgent) || /Mac OS X 12/.test(userAgent) || /Mac OS X 13/.test(userAgent) || /Mac OS X 14/.test(userAgent) || /Mac OS X 15/.test(userAgent)) return 'macOS (modern)';
+  if (/Mac OS X/.test(userAgent)) return 'macOS';
+  if (/CrOS/.test(userAgent)) return 'Chrome OS';
+  if (/Android/.test(userAgent)) return 'Android';
+  if (/iPhone|iPad|iPod/.test(userAgent)) return 'iOS';
+  if (/Linux/.test(userAgent)) return 'Linux';
+  return 'Unknown OS';
+}
+
+function parseBrowser(userAgent: string): string {
+  if (/Edg\//.test(userAgent)) return 'Microsoft Edge';
+  if (/OPR\/|Opera/.test(userAgent)) return 'Opera';
+  if (/Brave/.test(userAgent)) return 'Brave';
+  if (/Vivaldi/.test(userAgent)) return 'Vivaldi';
+  if (/Firefox\//.test(userAgent)) return 'Firefox';
+  if (/Chrome\//.test(userAgent) && !/Chromium/.test(userAgent)) return 'Google Chrome';
+  if (/Safari\//.test(userAgent) && !/Chrome/.test(userAgent)) return 'Safari';
+  return 'Unknown Browser';
+}
+
+function parseDevice(userAgent: string): string {
+  if (/Mobile|Android.*Mobile|iPhone|iPod/.test(userAgent)) return 'Mobile';
+  if (/iPad|Android(?!.*Mobile)|Tablet/.test(userAgent)) return 'Tablet';
+  return 'Desktop';
+}
+
+const os = parseOS(ua);
+const browser = parseBrowser(ua);
+const device = parseDevice(ua);
+
+// Additional server-side headers
+const acceptLang = headers.get('accept-language')?.split(',')[0] || 'Unknown';
+const dnt = headers.get('dnt');
+const secChUa = headers.get('sec-ch-ua') || null;
+const secChUaPlatform = headers.get('sec-ch-ua-platform')?.replace(/"/g, '') || null;
+const secChUaMobile = headers.get('sec-ch-ua-mobile') || null;
+const referer = headers.get('referer') || 'Direct visit';
+const connection = headers.get('connection') || 'Unknown';
+---
+
+<Layout>
+  <main class="container">
+    <!-- Hero -->
+    <section class="hero" id="hero">
+      <div class="hero__icon">👁️</div>
+      <div class="hero__badge">
+        <span class="pulse-dot"></span>
+        Live Scan
+      </div>
+      <h1>
+        What Do <span class="gradient-text">Trackers See</span>?
+      </h1>
+      <p class="hero__subtitle">
+        Your browser is broadcasting personal data right now. Here's <strong>exactly</strong> what advertisers, trackers, and websites can see about you — without your permission.
+      </p>
+    </section>
+
+    <!-- Alert banner -->
+    <div class="alert-banner" id="alert-banner">
+      <span class="alert-banner__icon">⚠️</span>
+      <span>
+        <strong>Your digital identity is exposed.</strong> We found <span id="leak-count">—</span> data points that trackers can use to identify and follow you across the web.
+      </span>
+    </div>
+
+    <!-- Ad Slot: Top Banner -->
+    <div class="ad-slot ad-slot--leaderboard" id="ad-top">
+      <ins class="adsbygoogle"
+        style="display:block"
+        data-ad-client="ca-pub-4657327478747074"
+        data-ad-slot="6860049940"
+        data-ad-format="auto"
+        data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+
+    <!-- Section: Network Identity -->
+    <div class="section-header">
+      <span class="section-header__line"></span>
+      <span class="section-header__title">🌐 Network Identity</span>
+      <span class="section-header__line"></span>
+    </div>
+
+    <div class="cards-grid">
+      <!-- IP Address -->
+      <div class="data-card" id="card-ip">
+        <div class="data-card__header">
+          <div class="data-card__icon data-card__icon--red">📡</div>
+          <div>
+            <div class="data-card__label">IP Address</div>
+            <div class="data-card__sublabel">Your network identifier</div>
+          </div>
+          <span class={`risk-tag ${isLocalhost ? 'risk-tag--low' : 'risk-tag--high'}`}>{isLocalhost ? 'Local' : 'High Risk'}</span>
+        </div>
+        <div class="data-card__value mono">{isLocalhost ? `${ip} (localhost)` : ip}</div>
+        <div class="data-card__detail">{ipDisplayNote}</div>
+      </div>
+
+      <!-- ISP / Connection -->
+      <div class="data-card" id="card-isp">
+        <div class="data-card__header">
+          <div class="data-card__icon data-card__icon--cyan">🏢</div>
+          <div>
+            <div class="data-card__label">Connection Info</div>
+            <div class="data-card__sublabel">How you're connected</div>
+          </div>
+          <span class="risk-tag risk-tag--medium">Medium</span>
+        </div>
+        <div class="data-card__value data-card__value--small">
+          <div class="details-list">
+            <div class="details-list__item">
+              <span class="details-list__key">Protocol</span>
+              <span class="details-list__val" id="val-protocol"><span class="loading">Scanning…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Connection</span>
+              <span class="details-list__val" id="val-connection-type"><span class="loading">Scanning…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Downlink</span>
+              <span class="details-list__val" id="val-downlink"><span class="loading">Scanning…</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Device & Browser -->
+    <div class="section-header">
+      <span class="section-header__line"></span>
+      <span class="section-header__title">💻 Device & Browser</span>
+      <span class="section-header__line"></span>
+    </div>
+
+    <div class="cards-grid">
+      <!-- OS & Browser -->
+      <div class="data-card" id="card-os">
+        <div class="data-card__header">
+          <div class="data-card__icon data-card__icon--purple">🖥️</div>
+          <div>
+            <div class="data-card__label">Operating System & Browser</div>
+            <div class="data-card__sublabel">From User-Agent header</div>
+          </div>
+          <span class="risk-tag risk-tag--high">High Risk</span>
+        </div>
+        <div class="data-card__value data-card__value--small">
+          <div class="details-list">
+            <div class="details-list__item">
+              <span class="details-list__key">OS</span>
+              <span class="details-list__val">{os}</span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Browser</span>
+              <span class="details-list__val">{browser}</span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Device</span>
+              <span class="details-list__val">{device}</span>
+            </div>
+            {secChUaPlatform && (
+              <div class="details-list__item">
+                <span class="details-list__key">Platform (hint)</span>
+                <span class="details-list__val">{secChUaPlatform}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <!-- Screen -->
+      <div class="data-card" id="card-screen">
+        <div class="data-card__header">
+          <div class="data-card__icon data-card__icon--amber">📐</div>
+          <div>
+            <div class="data-card__label">Screen & Display</div>
+            <div class="data-card__sublabel">Hardware characteristics</div>
+          </div>
+          <span class="risk-tag risk-tag--medium">Medium</span>
+        </div>
+        <div class="data-card__value data-card__value--small">
+          <div class="details-list">
+            <div class="details-list__item">
+              <span class="details-list__key">Resolution</span>
+              <span class="details-list__val" id="val-resolution"><span class="loading">Scanning…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Viewport</span>
+              <span class="details-list__val" id="val-viewport"><span class="loading">Scanning…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Color Depth</span>
+              <span class="details-list__val" id="val-color-depth"><span class="loading">Scanning…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Pixel Ratio</span>
+              <span class="details-list__val" id="val-pixel-ratio"><span class="loading">Scanning…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Touch Support</span>
+              <span class="details-list__val" id="val-touch"><span class="loading">Scanning…</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ad Slot: Mid-content -->
+    <div class="ad-slot ad-slot--rectangle" id="ad-mid">
+      <ins class="adsbygoogle"
+        style="display:block"
+        data-ad-client="ca-pub-4657327478747074"
+        data-ad-slot="YOUR_AD_SLOT_ID_2"
+        data-ad-format="auto"
+        data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+
+    <!-- Section: Fingerprinting -->
+    <div class="section-header">
+      <span class="section-header__line"></span>
+      <span class="section-header__title">🔏 Digital Fingerprints</span>
+      <span class="section-header__line"></span>
+    </div>
+
+    <div class="cards-grid">
+      <!-- Canvas Fingerprint -->
+      <div class="data-card" id="card-canvas">
+        <div class="data-card__header">
+          <div class="data-card__icon data-card__icon--red">🎨</div>
+          <div>
+            <div class="data-card__label">Canvas Fingerprint</div>
+            <div class="data-card__sublabel">Unique rendering signature</div>
+          </div>
+          <span class="risk-tag risk-tag--high">High Risk</span>
+        </div>
+        <div class="data-card__value data-card__value--small" id="val-canvas-hash"><span class="loading">Generating fingerprint…</span></div>
+        <div class="canvas-preview" id="canvas-preview"></div>
+        <div class="data-card__detail">Your browser renders text and shapes in a unique way based on your GPU, drivers, and OS. This produces a hash that can track you without cookies.</div>
+      </div>
+
+      <!-- WebGL -->
+      <div class="data-card" id="card-webgl">
+        <div class="data-card__header">
+          <div class="data-card__icon data-card__icon--cyan">🎮</div>
+          <div>
+            <div class="data-card__label">WebGL Fingerprint</div>
+            <div class="data-card__sublabel">GPU hardware info</div>
+          </div>
+          <span class="risk-tag risk-tag--high">High Risk</span>
+        </div>
+        <div class="data-card__value data-card__value--small">
+          <div class="details-list">
+            <div class="details-list__item">
+              <span class="details-list__key">Renderer</span>
+              <span class="details-list__val" id="val-webgl-renderer"><span class="loading">Scanning…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Vendor</span>
+              <span class="details-list__val" id="val-webgl-vendor"><span class="loading">Scanning…</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="data-card__detail">WebGL exposes your exact GPU model, which combined with other data creates a near-unique fingerprint.</div>
+      </div>
+
+      <!-- Audio Fingerprint -->
+      <div class="data-card" id="card-audio">
+        <div class="data-card__header">
+          <div class="data-card__icon data-card__icon--purple">🔊</div>
+          <div>
+            <div class="data-card__label">Audio Fingerprint</div>
+            <div class="data-card__sublabel">AudioContext signature</div>
+          </div>
+          <span class="risk-tag risk-tag--high">High Risk</span>
+        </div>
+        <div class="data-card__value data-card__value--small" id="val-audio-hash"><span class="loading">Generating…</span></div>
+        <div class="data-card__detail">The Web Audio API processes sound differently on each device, creating another trackable fingerprint — even with no audio playing.</div>
+      </div>
+    </div>
+
+    <!-- Section: Privacy & Preferences -->
+    <div class="section-header">
+      <span class="section-header__line"></span>
+      <span class="section-header__title">🛡️ Privacy & Preferences</span>
+      <span class="section-header__line"></span>
+    </div>
+
+    <div class="cards-grid">
+      <!-- Locale & Time -->
+      <div class="data-card" id="card-locale">
+        <div class="data-card__header">
+          <div class="data-card__icon data-card__icon--green">🌍</div>
+          <div>
+            <div class="data-card__label">Locale & Timezone</div>
+            <div class="data-card__sublabel">Regional identifiers</div>
+          </div>
+          <span class="risk-tag risk-tag--medium">Medium</span>
+        </div>
+        <div class="data-card__value data-card__value--small">
+          <div class="details-list">
+            <div class="details-list__item">
+              <span class="details-list__key">Language</span>
+              <span class="details-list__val" id="val-language"><span class="loading">Scanning…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Accept-Lang</span>
+              <span class="details-list__val">{acceptLang}</span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Timezone</span>
+              <span class="details-list__val" id="val-timezone"><span class="loading">Scanning…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">UTC Offset</span>
+              <span class="details-list__val" id="val-utc-offset"><span class="loading">Scanning…</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Privacy Settings -->
+      <div class="data-card" id="card-privacy">
+        <div class="data-card__header">
+          <div class="data-card__icon data-card__icon--amber">🔒</div>
+          <div>
+            <div class="data-card__label">Privacy Settings</div>
+            <div class="data-card__sublabel">Browser privacy posture</div>
+          </div>
+          <span class="risk-tag risk-tag--medium">Medium</span>
+        </div>
+        <div class="data-card__value data-card__value--small">
+          <div class="details-list">
+            <div class="details-list__item">
+              <span class="details-list__key">Do Not Track</span>
+              <span class="details-list__val" id="val-dnt">{dnt === '1' ? '✅ Enabled' : '❌ Disabled'}</span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Cookies</span>
+              <span class="details-list__val" id="val-cookies"><span class="loading">Checking…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">LocalStorage</span>
+              <span class="details-list__val" id="val-localstorage"><span class="loading">Checking…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Ad Blocker</span>
+              <span class="details-list__val" id="val-adblock"><span class="loading">Checking…</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hardware -->
+      <div class="data-card" id="card-hardware">
+        <div class="data-card__header">
+          <div class="data-card__icon data-card__icon--red">⚙️</div>
+          <div>
+            <div class="data-card__label">Hardware Signals</div>
+            <div class="data-card__sublabel">Device capabilities</div>
+          </div>
+          <span class="risk-tag risk-tag--low">Low</span>
+        </div>
+        <div class="data-card__value data-card__value--small">
+          <div class="details-list">
+            <div class="details-list__item">
+              <span class="details-list__key">CPU Cores</span>
+              <span class="details-list__val" id="val-cpu-cores"><span class="loading">Scanning…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">RAM (approx)</span>
+              <span class="details-list__val" id="val-ram"><span class="loading">Scanning…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Battery</span>
+              <span class="details-list__val" id="val-battery"><span class="loading">Checking…</span></span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Platform</span>
+              <span class="details-list__val" id="val-platform"><span class="loading">Scanning…</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Referrer -->
+      <div class="data-card" id="card-referrer">
+        <div class="data-card__header">
+          <div class="data-card__icon data-card__icon--cyan">🔗</div>
+          <div>
+            <div class="data-card__label">Referrer & Headers</div>
+            <div class="data-card__sublabel">Request metadata</div>
+          </div>
+          <span class="risk-tag risk-tag--low">Low</span>
+        </div>
+        <div class="data-card__value data-card__value--small">
+          <div class="details-list">
+            <div class="details-list__item">
+              <span class="details-list__key">Referrer</span>
+              <span class="details-list__val">{referer}</span>
+            </div>
+            <div class="details-list__item">
+              <span class="details-list__key">Connection</span>
+              <span class="details-list__val">{connection}</span>
+            </div>
+            {secChUa && (
+              <div class="details-list__item">
+                <span class="details-list__key">UA Hints</span>
+                <span class="details-list__val">{secChUa}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- User-Agent raw -->
+    <div class="section-header">
+      <span class="section-header__line"></span>
+      <span class="section-header__title">📋 Raw User-Agent String</span>
+      <span class="section-header__line"></span>
+    </div>
+
+    <div class="cards-grid">
+      <div class="data-card data-card--wide" id="card-useragent">
+        <div class="data-card__header">
+          <div class="data-card__icon data-card__icon--purple">📝</div>
+          <div>
+            <div class="data-card__label">User-Agent</div>
+            <div class="data-card__sublabel">Sent with every HTTP request</div>
+          </div>
+        </div>
+        <div class="data-card__value data-card__value--small" style="font-size: 0.78rem; opacity: 0.85; line-height: 1.6;">{ua}</div>
+      </div>
+    </div>
+
+    <!-- Privacy Score -->
+    <section class="privacy-score" id="privacy-score">
+      <div class="privacy-score__label">Your Exposure Score</div>
+      <div class="privacy-score__ring">
+        <svg viewBox="0 0 160 160">
+          <circle class="ring-bg" cx="80" cy="80" r="70" />
+          <circle class="ring-fill" id="score-ring" cx="80" cy="80" r="70" />
+        </svg>
+        <div class="privacy-score__number" id="score-number">—</div>
+      </div>
+      <div class="privacy-score__verdict" id="score-verdict">Calculating…</div>
+    </section>
+
+    <!-- Ad Slot: Bottom CTA -->
+    <div class="ad-slot ad-slot--leaderboard" id="ad-bottom">
+      <ins class="adsbygoogle"
+        style="display:block"
+        data-ad-client="ca-pub-4657327478747074"
+        data-ad-slot="YOUR_AD_SLOT_ID_3"
+        data-ad-format="auto"
+        data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+
+    <!-- CTA -->
+    <section class="cta-section" id="cta">
+      <h2>🛡️ Protect Your Digital Identity</h2>
+      <p>The data above is visible to every website you visit. A VPN and privacy-focused browser can significantly reduce your exposure.</p>
+      <div class="cta-buttons">
+        <button class="btn btn--primary" id="btn-rescan" onclick="location.reload()">
+          🔄 Scan Again
+        </button>
+        <a class="btn btn--ghost" href="#hero">
+          ↑ Back to Top
+        </a>
+      </div>
+    </section>
+
+    <!-- Educational Content (AdSense Requirement) -->
+    <section class="educational-section" style="margin-top: 4rem; padding-top: 4rem; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+      <div class="prose">
+        <h2>Understanding Browser Fingerprinting</h2>
+        <p>Browser fingerprinting is a highly accurate method of identifying unique users and tracking their online activity without relying on traditional cookies. As you can see from the live audit above, your browser broadcasts a tremendous amount of sensitive information to every website you visit.</p>
+        
+        <h3>How Tracker Fingerprinting Works</h3>
+        <p>Instead of placing a small file (a 'cookie') on your computer, modern trackers run hidden JavaScript to interrogate your browser about its exact environment. This involves reading your IP address, inspecting the active User-Agent string to determine your operating system, and running silent tests using your computer's hardware. By combining your screen resolution, installed fonts, time zone, and language settings, data brokers can create a unique "fingerprint" that identifies you across completely unrelated websites.</p>
+
+        <h3>The Canvas and WebGL Threat</h3>
+        <p>The most evasive trackers use <a href="/knowledge-base#canvas">Canvas and WebGL fingerprinting</a>. These scripts force your browser to draw invisible text and 3D shapes. Because every combination of graphics card, drivers, and operating system renders pixels slightly differently, the resulting image serves as a permanent, unique identifier. Even if you clear your browsing data or use "Incognito" mode, your hardware rendering signature remains identical.</p>
+
+        <h3>Why is this data collected?</h3>
+        <p>This massive data harvesting fuels the targeted advertising industry. Ad networks build sprawling behavioral profiles of your habits, interests, and financial status based on the sites you visit. In some instances, it is even used for price discrimination—charging you more for flights or hotels based on your device or assumed demographic. Using a comprehensive VPN and a hardened browser with strict tracking protection is the only consistent way to obscure this data.</p>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>© 2026 What Do Trackers See? · All scans run locally. <strong>No data is stored or sent to our servers.</strong></p>
+      <p style="margin-top: 0.5rem;">
+        <a href="/">Privacy Audit</a> ·
+        <a href="/knowledge-base">Knowledge Base & FAQ</a> ·
+        <a href="/privacy">Privacy Policy</a>
+      </p>
+      <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--color-text-dim); opacity: 0.8;">
+        Built for awareness, not surveillance. <a href="mailto:admin@metapreview.net">Contact</a>
+      </p>
+    </footer>
+  </main>
+
+  <script>
+    // ── Client-side fingerprinting ──
+    document.addEventListener('DOMContentLoaded', () => {
+      let leakCount = 0;
+
+      // Helper: set value in a DOM element
+      function setValue(id: string, value: string) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      // ── Screen & Display ──
+      setValue('val-resolution', `${screen.width} × ${screen.height}`);
+      setValue('val-viewport', `${window.innerWidth} × ${window.innerHeight}`);
+      setValue('val-color-depth', `${screen.colorDepth}-bit`);
+      setValue('val-pixel-ratio', `${window.devicePixelRatio}x`);
+      setValue('val-touch', 'ontouchstart' in window || navigator.maxTouchPoints > 0 ? `Yes (${navigator.maxTouchPoints} points)` : 'No');
+      leakCount += 5;
+
+      // ── Locale & Timezone ──
+      setValue('val-language', navigator.language || 'Unknown');
+      setValue('val-timezone', Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown');
+      const offset = new Date().getTimezoneOffset();
+      const sign = offset <= 0 ? '+' : '-';
+      const absOffset = Math.abs(offset);
+      setValue('val-utc-offset', `UTC${sign}${String(Math.floor(absOffset / 60)).padStart(2, '0')}:${String(absOffset % 60).padStart(2, '0')}`);
+      leakCount += 3;
+
+      // ── Privacy Settings ──
+      setValue('val-cookies', navigator.cookieEnabled ? '✅ Enabled' : '❌ Disabled');
+      try {
+        localStorage.setItem('__test', '1');
+        localStorage.removeItem('__test');
+        setValue('val-localstorage', '✅ Available');
+      } catch {
+        setValue('val-localstorage', '❌ Blocked');
+      }
+      leakCount += 2;
+
+      // ── Ad blocker detection ──
+      const adTest = document.createElement('div');
+      adTest.innerHTML = '&nbsp;';
+      adTest.className = 'adsbox ad-placement ad-banner textads banner-ads';
+      adTest.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;';
+      document.body.appendChild(adTest);
+      setTimeout(() => {
+        const blocked = adTest.offsetHeight === 0 || adTest.clientHeight === 0;
+        setValue('val-adblock', blocked ? '✅ Detected' : '❌ Not detected');
+        document.body.removeChild(adTest);
+      }, 100);
+
+      // ── Hardware ──
+      setValue('val-cpu-cores', String((navigator as any).hardwareConcurrency || 'Unknown'));
+      setValue('val-ram', (navigator as any).deviceMemory ? `${(navigator as any).deviceMemory} GB` : 'Not available');
+
+      // Platform detection: navigator.platform returns 'MacIntel' even on Apple Silicon.
+      // Use the modern userAgentData API + WebGL renderer to detect the real architecture.
+      async function detectPlatform(): Promise<string> {
+        // Try modern User-Agent Client Hints API first
+        if ('userAgentData' in navigator) {
+          try {
+            const uaData = await (navigator as any).userAgentData.getHighEntropyValues(['architecture', 'platform', 'model', 'bitness']);
+            const platform = uaData.platform || 'Unknown';
+            const arch = uaData.architecture || '';
+            const bitness = uaData.bitness || '';
+            if (platform === 'macOS' && arch === 'arm') {
+              return `macOS (Apple Silicon, ${bitness}-bit)`;
+            } else if (platform === 'macOS' && arch === 'x86') {
+              return `macOS (Intel x86, ${bitness}-bit)`;
+            } else if (arch) {
+              return `${platform} (${arch}${bitness ? `, ${bitness}-bit` : ''})`;
+            }
+            return platform;
+          } catch {
+            // Fall through to WebGL detection
+          }
+        }
+
+        // Fallback: check WebGL renderer for Apple GPU (indicates Apple Silicon)
+        try {
+          const c = document.createElement('canvas');
+          const gl = c.getContext('webgl');
+          if (gl) {
+            const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+            if (dbg) {
+              const renderer = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '';
+              if (/Apple M\d/i.test(renderer)) {
+                const match = renderer.match(/Apple M\d+[\w\s]*/i);
+                return `macOS (${match ? match[0].trim() : 'Apple Silicon'})`;
+              }
+            }
+          }
+        } catch {}
+
+        // Final fallback
+        return navigator.platform || 'Unknown';
+      }
+
+      detectPlatform().then((platform) => {
+        setValue('val-platform', platform);
+      });
+      leakCount += 3;
+
+      // ── Battery ──
+      if ('getBattery' in navigator) {
+        (navigator as any).getBattery().then((battery: any) => {
+          const pct = Math.round(battery.level * 100);
+          const charging = battery.charging ? ' (Charging)' : '';
+          setValue('val-battery', `${pct}%${charging}`);
+          leakCount += 1;
+          updateScore();
+        }).catch(() => {
+          setValue('val-battery', 'Not available');
+        });
+      } else {
+        setValue('val-battery', 'Not available');
+      }
+
+      // ── Connection Info ──
+      const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+      if (conn) {
+        setValue('val-protocol', window.location.protocol === 'https:' ? 'HTTPS' : 'HTTP');
+        setValue('val-connection-type', conn.effectiveType || 'Unknown');
+        setValue('val-downlink', conn.downlink ? `${conn.downlink} Mbps` : 'Unknown');
+        leakCount += 3;
+      } else {
+        setValue('val-protocol', window.location.protocol === 'https:' ? 'HTTPS' : 'HTTP');
+        setValue('val-connection-type', 'Not available');
+        setValue('val-downlink', 'Not available');
+        leakCount += 1;
+      }
+
+      // ── Canvas Fingerprint ──
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 280;
+        canvas.height = 60;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Background
+          ctx.fillStyle = '#0c1018';
+          ctx.fillRect(0, 0, 280, 60);
+
+          // Text rendering (unique per GPU/OS/font)
+          ctx.textBaseline = 'top';
+          ctx.font = '14px Arial';
+          ctx.fillStyle = '#ff3b5c';
+          ctx.fillText('🔒 Tracker Fingerprint Test', 8, 6);
+
+          ctx.font = 'bold 11px monospace';
+          ctx.fillStyle = '#00e5ff';
+          ctx.fillText('abcdefghijklmnopqrstuvwxyz0123456789', 8, 28);
+
+          // Geometry
+          ctx.beginPath();
+          ctx.arc(250, 40, 14, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(168, 85, 247, 0.6)';
+          ctx.fill();
+
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(200, 50);
+          ctx.lineTo(220, 30);
+          ctx.lineTo(240, 50);
+          ctx.closePath();
+          ctx.stroke();
+
+          // Blend
+          ctx.globalCompositeOperation = 'multiply';
+          ctx.fillStyle = 'rgba(255, 59, 92, 0.3)';
+          ctx.fillRect(60, 10, 160, 40);
+          ctx.globalCompositeOperation = 'source-over';
+
+          // Hash the data URL
+          const dataUrl = canvas.toDataURL();
+          let hash = 0;
+          for (let i = 0; i < dataUrl.length; i++) {
+            const char = dataUrl.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash |= 0; // Convert to 32-bit int
+          }
+          const hexHash = (hash >>> 0).toString(16).padStart(8, '0');
+          const fullHash = `${hexHash}-${dataUrl.length.toString(16)}`;
+
+          setValue('val-canvas-hash', fullHash);
+          leakCount += 1;
+
+          // Display the canvas
+          const preview = document.getElementById('canvas-preview');
+          if (preview) {
+            preview.appendChild(canvas);
+          }
+        }
+      } catch {
+        setValue('val-canvas-hash', 'Blocked / Not available');
+      }
+
+      // ── WebGL Fingerprint ──
+      try {
+        const glCanvas = document.createElement('canvas');
+        const gl = glCanvas.getContext('webgl') || glCanvas.getContext('experimental-webgl');
+        if (gl) {
+          const debugInfo = (gl as WebGLRenderingContext).getExtension('WEBGL_debug_renderer_info');
+          if (debugInfo) {
+            const renderer = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+            const vendor = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+            setValue('val-webgl-renderer', renderer || 'Unknown');
+            setValue('val-webgl-vendor', vendor || 'Unknown');
+            leakCount += 2;
+          } else {
+            setValue('val-webgl-renderer', 'Debug info blocked');
+            setValue('val-webgl-vendor', 'Debug info blocked');
+          }
+        } else {
+          setValue('val-webgl-renderer', 'WebGL not available');
+          setValue('val-webgl-vendor', 'WebGL not available');
+        }
+      } catch {
+        setValue('val-webgl-renderer', 'Blocked');
+        setValue('val-webgl-vendor', 'Blocked');
+      }
+
+      // ── Audio Fingerprint ──
+      try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const analyser = audioCtx.createAnalyser();
+        const gainNode = audioCtx.createGain();
+        const scriptProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
+
+        gainNode.gain.value = 0; // Mute
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(10000, audioCtx.currentTime);
+
+        oscillator.connect(analyser);
+        analyser.connect(scriptProcessor);
+        scriptProcessor.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start(0);
+
+        scriptProcessor.onaudioprocess = function (ev) {
+          const output = ev.inputBuffer.getChannelData(0);
+          let hash = 0;
+          for (let i = 0; i < output.length; i += 100) {
+            hash += Math.abs(output[i]);
+          }
+          const audioHash = hash.toFixed(6).replace('.', '');
+          setValue('val-audio-hash', `0x${parseInt(audioHash).toString(16).padStart(8, '0')}`);
+          leakCount += 1;
+
+          // Cleanup
+          oscillator.stop();
+          scriptProcessor.disconnect();
+          analyser.disconnect();
+          gainNode.disconnect();
+          audioCtx.close();
+          updateScore();
+        };
+      } catch {
+        setValue('val-audio-hash', 'Not available');
+      }
+
+      // ── Count server-side leaks ──
+      // IP, OS, browser, device, accept-lang, dnt, referrer, connection = 8
+      leakCount += 8;
+
+      // ── Update leak count & score ──
+      function updateScore() {
+        const countEl = document.getElementById('leak-count');
+        if (countEl) countEl.textContent = String(leakCount);
+
+        // Score: higher = more exposed (0-100)
+        const score = Math.min(Math.round((leakCount / 30) * 100), 100);
+        const scoreNumber = document.getElementById('score-number');
+        const scoreRing = document.getElementById('score-ring') as SVGCircleElement | null;
+        const scoreVerdict = document.getElementById('score-verdict');
+
+        if (scoreNumber) scoreNumber.textContent = `${score}`;
+        if (scoreRing) {
+          const circumference = 2 * Math.PI * 70;
+          const offset = circumference - (score / 100) * circumference;
+          scoreRing.style.strokeDasharray = String(circumference);
+          scoreRing.style.strokeDashoffset = String(offset);
+
+          if (score >= 70) {
+            scoreRing.style.stroke = '#ff3b5c';
+          } else if (score >= 40) {
+            scoreRing.style.stroke = '#f59e0b';
+          } else {
+            scoreRing.style.stroke = '#22c55e';
+          }
+        }
+
+        if (scoreVerdict) {
+          if (score >= 70) {
+            scoreVerdict.textContent = '⚠️ Highly Exposed';
+            scoreVerdict.style.color = '#ff3b5c';
+          } else if (score >= 40) {
+            scoreVerdict.textContent = '⚡ Moderately Exposed';
+            scoreVerdict.style.color = '#f59e0b';
+          } else {
+            scoreVerdict.textContent = '✅ Reasonably Protected';
+            scoreVerdict.style.color = '#22c55e';
+          }
+        }
+      }
+
+      // Initial score update after a short delay
+      setTimeout(updateScore, 500);
+    });
+  </script>
+</Layout>

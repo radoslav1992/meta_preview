@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ff3b5c"/>
+      <stop offset="50%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#00e5ff"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield -->
+  <path d="M32 4L8 16v16c0 14.4 10.24 27.84 24 32 13.76-4.16 24-17.6 24-32V16L32 4z" fill="url(#g)" opacity="0.15" stroke="url(#g)" stroke-width="2"/>
+  <!-- Eye -->
+  <ellipse cx="32" cy="30" rx="14" ry="9" stroke="url(#g)" stroke-width="2.5" fill="none"/>
+  <circle cx="32" cy="30" r="5" fill="url(#g)"/>
+  <circle cx="32" cy="30" r="2" fill="#06080d"/>
+</svg>
